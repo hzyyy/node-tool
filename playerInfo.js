@@ -10,55 +10,54 @@ const headers = { 'User-Agent': 'Mozilla/5.0' };
 const proxyConfig = {
   headers,
   proxy: false,
-  httpsAgent: new HttpsProxyAgent('http://127.0.0.1:7890')
+  httpsAgent: new HttpsProxyAgent('http://127.0.0.1:2010')
 };
-
 
 axios.get(url, proxyConfig)
   .then(response => {
-    // Step 2: Parse the webpage content
     const $ = cheerio.load(response.data);
 
-    // Step 3: Extract players data
     let players = [];
-    const table = $('#mw-content-text .mw-content-ltr div small table:eq(0)');
+    const table = $('#mw-content-text .mw-content-ltr small table:eq(0)');
     
-    console.log(table.find('tr td'));
+    table.find('tr').each((index, tr) => {
+      let player = {};
+      if(index == 0) {
+        return true
+      }
 
-    return
-
-    table.find('tr td').each((index, element) => {
-      const cols = $(element).find('td');
       
-      let date = $(cols[2]).text().trim();
-      
-      console.log(date);
-      // 提取日期
-      const dateStr = date.match(/\d{4}年\d{1,2}月\d{1,2}日/)?.[0] || '';
-      // 提取括号内容
-      const bracketContent = date.match(/\((.*?)\)/)?.[1] || '';
+      let isPositionTr = $(tr).children('th').length > 0
 
-      const player = {
-        "号码": $(cols[0]).text().trim(),
-        "姓名": $(cols[1]).find('.hauptlink').text().trim(),
-        "出生日期": dateStr,
-        "年龄": bracketContent
-        // Position: $(cols[2]).text().trim(),
-        // 'Date of Birth': $(cols[3]).text().trim(),
-        // Nationality: $(cols[4]).find('img').attr('title'),
-        // 'Market Value': $(cols[5]).text().trim()
-      };
+      if(isPositionTr) {
+        player['位置'] = $(tr).children('th').text().trim()
+      } else {
+        player = {
+          ...player,
+          "号码": $(tr).children('td:eq(0)').text().trim(),
+          "国籍": $(tr).children('td:eq(1)').text().trim(),
+          "姓名": $(tr).children('td:eq(2)').text().trim(),
+          "出生日期": $(tr).children('td:eq(3)').text().trim(),
+          "年龄": $(tr).children('td:eq(4)').text().trim(),
+          "身高": $(tr).children('td:eq(5)').text().trim(),
+          "体重": $(tr).children('td:eq(6)').text().trim(),
+          "加盟年份": $(tr).children('td:eq(7)').text().trim(),
+          "前属球队": $(tr).children('td:eq(8)').text().trim(),
+          "身价": $(tr).children('td:eq(9)').text().trim(),
+          "出生地": $(tr).children('td:eq(10)').text().trim(),
+        }
+      }
 
       players.push(player);
     });
 
     // Step 4: Convert to worksheet and workbook
-    // const worksheet = xlsx.utils.json_to_sheet(players);
-    // const workbook = xlsx.utils.book_new();
-    // xlsx.utils.book_append_sheet(workbook, worksheet, 'Players');
+    const worksheet = xlsx.utils.json_to_sheet(players);
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Players');
 
-    // // Step 5: Save to Excel
-    // xlsx.writeFile(workbook, 'Guangzhou_Evergrande_Players.xlsx');
+    // Step 5: Save to Excel
+    xlsx.writeFile(workbook, 'Guangzhou_Evergrande_Players.xlsx');
 
     // console.log("Data has been successfully saved to Guangzhou_Evergrande_Players.xlsx");
   })
