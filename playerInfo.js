@@ -10,7 +10,7 @@ const headers = { 'User-Agent': 'Mozilla/5.0' };
 const proxyConfig = {
   headers,
   proxy: false,
-  httpsAgent: new HttpsProxyAgent('http://127.0.0.1:2010')
+  httpsAgent: new HttpsProxyAgent('http://127.0.0.1:7890')
 };
 
 axios.get(url, proxyConfig)
@@ -19,24 +19,28 @@ axios.get(url, proxyConfig)
 
     let players = [];
     const table = $('#mw-content-text .mw-content-ltr small table:eq(0)');
-    
+    let playerPosition = null
     table.find('tr').each((index, tr) => {
       let player = {};
       if(index == 0) {
         return true
       }
-
       
       let isPositionTr = $(tr).children('th').length > 0
 
       if(isPositionTr) {
-        player['位置'] = $(tr).children('th').text().trim()
+        playerPosition = $(tr).children('th').text().trim()
       } else {
+        let nameAll = $(tr).children('td:eq(2)').text().trim()?.split(" (");
+        let nameCh = nameAll[0]
+        let nameEn = nameAll[1].replace(")", "")
         player = {
           ...player,
+          "位置": playerPosition,
           "号码": $(tr).children('td:eq(0)').text().trim(),
-          "国籍": $(tr).children('td:eq(1)').text().trim(),
-          "姓名": $(tr).children('td:eq(2)').text().trim(),
+          "国籍": $(tr).children('td:eq(1)').find('img').attr('alt').trim(),
+          "姓名": nameCh,
+          "英文名": nameEn,
           "出生日期": $(tr).children('td:eq(3)').text().trim(),
           "年龄": $(tr).children('td:eq(4)').text().trim(),
           "身高": $(tr).children('td:eq(5)').text().trim(),
@@ -51,15 +55,13 @@ axios.get(url, proxyConfig)
       players.push(player);
     });
 
-    // Step 4: Convert to worksheet and workbook
+    console.log(players);
+
     const worksheet = xlsx.utils.json_to_sheet(players);
     const workbook = xlsx.utils.book_new();
+    
     xlsx.utils.book_append_sheet(workbook, worksheet, 'Players');
-
-    // Step 5: Save to Excel
-    xlsx.writeFile(workbook, 'Guangzhou_Evergrande_Players.xlsx');
-
-    // console.log("Data has been successfully saved to Guangzhou_Evergrande_Players.xlsx");
+    xlsx.writeFile(workbook, 'C:/Users/ZhangYuG/Downloads/Players.xlsx');
   })
   .catch(error => {
     console.error(`Error fetching the webpage: ${error.message}`);
